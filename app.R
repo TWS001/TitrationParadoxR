@@ -148,7 +148,7 @@ shinyApp(ui <- fluidPage(
                 options = list(container = "body")),
       sliderInput("doseScalarEffect",
                   HTML(paste0("Scalar ","&#946;",
-                              tags$sub("1"))),
+                              tags$sub("1")," (scales ","&#916;E)")),
                   min = 0.25,
                   max = 1,
                   step = .05,
@@ -157,7 +157,7 @@ shinyApp(ui <- fluidPage(
                 options = list(container = "body")),
       sliderInput("doseScalarDose",
                   HTML(paste0("Scalar ","&#946;",
-                              tags$sub("2"))),
+                              tags$sub("2")," (scales ","&#916;D)")),
                   min = 0,
                   max = 0.25,
                   value = 0.1),
@@ -186,7 +186,7 @@ shinyApp(ui <- fluidPage(
                   value = 1),
       bsTooltip("startDose", textStartDose, options = list(container = "body")),
       sliderInput("startSDDose",
-                  "Variability of input (SD):",
+                  "Variability of initial dose (SD):",
                   min = 0,
                   max = 0.4,
                   step = 0.01,
@@ -279,18 +279,6 @@ server <- function(input, output) {
       
       mLm <- lm(stepEffect ~ stepDose)
       abline(mLm, lwd = 1, col = "blue")
-      summary(mLm)
-      # text(0.4,0.2,round(summary(mLm)$coefficients[2],2),cex = 1)
-      ciLmText <- HTML(paste0(
-        "Slope of lm (99% CI):\n",
-        round(summary(mLm)$coefficients[2],3),
-        " (",
-        round(confint(mLm,level = 0.99)[2,1],3),
-        " to ",
-        round(confint(mLm,level = 0.99)[2,2],3),
-        ")\nNot positive = paradox!"
-      ))
-      text(0.6, 0.2, ciLmText, cex = .75)
     }
     
     # Plot the PD curve
@@ -305,12 +293,10 @@ server <- function(input, output) {
     
     
     qEff <- round(quantile(stepEffect, c(0.005, 0.995)), 2)
-    text(.4, .75, paste("99% effect:\n ", qEff[1], "and", qEff[2]), cex = .75)
+    text(.4, .75, paste("99% effect:\n ", qEff[1], "to", qEff[2]), cex = .75)
     text(1.8, .3, paste("CVe:\n ", round(100 * sd(stepEffect) / mean(stepEffect), 2), "%"), cex = .75)
     text(1.8, .15, paste("CVd:\n ", round(100 * sd(stepDose) / mean(stepDose), 2), "%"), cex = .75)
-    if(idx > 1){
-      text(1.8, .05, paste("Titration index:\n ", round(mean(stepDose)* sd(stepEffect) / mean(stepEffect)/sd(stepDose), 2)), cex = .75)
-    }
+    
     
     # Line with first derivative
     # (.5 - d1dD) + Dose * d1dD
