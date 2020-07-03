@@ -121,12 +121,18 @@ textEffect <- HTML(paste0("Scalar &#946;",
                         tags$sub("1")," in:                    <br/>",
                       "&#916;D = &#946;",tags$sub("1"), "(E",tags$sub("T"),"-E",tags$sub("i"),")/k",
                       "+ &#946;",tags$sub("2"),"(D",tags$sub("T"),"-D",tags$sub("i"),")"))
-textDose <- paste0("This reflects our tendency in titration to e.g. reduce the dose more ",
-                   "agressively if effect is high AND the current dose higher than expected<br/> ",
+textDose <- paste0(
                    "Scalar &#946;",
                    tags$sub("2")," in:                    <br/>",
                    "&#916;D = &#946;",tags$sub("1"), "(E",tags$sub("T"),"-E",tags$sub("i"),")/k",
-                   "+ &#946;",tags$sub("2"),"(D",tags$sub("T"),"-D",tags$sub("i"),")")
+                   "+ &#946;",tags$sub("2"),"(D",tags$sub("T"),"-D",tags$sub("i"),")<br/>",
+                   "This reflects our tendency in titration to e.g. reduce the dose more ",
+                   "agressively if effect is high AND the current dose higher than expected")
+textEffectError <- paste0(
+  "Variability or error in the measurement. This is technically the same as not relying ",
+  "on the measured effect for dosing. The bigger SD is, the more random is the dose i.e. ",
+  "independent of the measurement"
+)
 
 # ui:
 
@@ -175,8 +181,9 @@ shinyApp(ui <- fluidPage(
                   min = 0.0,
                   max = 0.3,
                   step = 0.01,
-                  value = 0
-      ),
+                  value = 0),
+                  bsTooltip("effectError", textEffectError,
+                                      options = list(container = "body")),
       
       sliderInput("startDose",
                   textStartDose,
