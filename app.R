@@ -19,7 +19,7 @@ mSD <- 0.18
 # D50 "normalized"
 D50_TV <- 1
 #
-maxSteps <- 50
+maxSteps <- 25
 
 Emax <- function(D, D50, g, maxEff = 1, zeroEff = 0) {
   hill <- D^g / (D50^g + D^g)
@@ -42,13 +42,15 @@ logNormalVar <- function(value, mSD = 0.1, isRV = FALSE) {
 }
 
 
-# Calulation of delta input - degressively smaller change of input
+# Calulation of delta input: Proportional change
 delta_dose <- function(measEff, currentDose, targetEff, hill1Deriv, startVal) {
   # difference of dose corresp with effect along the linearized Hill curve
   # ... E = (E_50 - E)/d1D1
   deviationFromMeanEffect_Dose <- (targetEff - measEff) / hill1Deriv
   
   # difference between  current dose and expected dose
+  # typical dose for targetEff. targetEff = 0.5 (fix)
+  #D_TV <- revPD(targetEff,0,1,D50_TV,pGamma)
   deviationFromMeanDose_Dose <- D50_TV - currentDose
   
   # deltaDoseForNextStep = f(deltaEffect)* scalar1 + f(deltaDose) * scalar2
@@ -78,8 +80,7 @@ titrate <- function(nSteps, inputSD, targetEffect, D50_ind, startVal) {
         D50 <- logNormalVar(D50, mSD = inputSD, isRV = TRUE)
         # noise in effect measure or not making use of measurement
         effectToUse <- Dose_Effect[i - 1, "Effect"] + rnorm(length(Dose_Effect[i - 1, "Effect"]), sd = startVal$effectError)
-        
-        
+
         deltaDose <- delta_dose(effectToUse, Dose_Effect[i - 1, "Dose"], targetEffect, d1dD, startVal)
   
         newDose <- Dose_Effect[i - 1, "Dose"] + round(deltaDose, 20)
@@ -139,7 +140,7 @@ textEffectError <- paste0(
 shinyApp(ui <- fluidPage(
   
   # Application title
-  titlePanel("MC_Titration"),
+  titlePanel("Titration paradox"),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
@@ -158,15 +159,16 @@ shinyApp(ui <- fluidPage(
                   min = 0.25,
                   max = 1,
                   step = .05,
-                  value = 0.5),
+                  value = 0.6),
       bsTooltip("doseScalarEffect", textEffect,
                 options = list(container = "body")),
       sliderInput("doseScalarDose",
                   HTML(paste0("Scalar ","&#946;",
                               tags$sub("2")," (scales ","&#916;D)")),
                   min = 0,
-                  max = 0.25,
-                  value = 0.1),
+                  max = 0.2,
+                  step = 0.01,
+                  value = 0.05),
       bsTooltip("doseScalarDose", textDose,
                 options = list(container = "body")),
       
@@ -242,7 +244,7 @@ server <- function(input, output) {
     nSteps <- maxSteps+1
     
     inputSD <- as.numeric(input$inputSD)
-    targetEff <- .5
+    targetEff <- 0.5
     D50_ind <- D50_TV * exp(rnorm(nSubj, 0, mSD))
     list(
       retVals = list(startVal = startVal, nSteps = nSteps, nSubj = nSubj, D50_ind = D50_ind(), targetEff = targetEff, inputSD = inputSD),
@@ -280,6 +282,7 @@ server <- function(input, output) {
     points(stepDose, stepEffect)
     # linear regression for this step
     
+    # For internal use:
     #writeSimuData(idx,input,stepEffect,stepDose)
     
     if (idx > 1) {
@@ -293,14 +296,14 @@ server <- function(input, output) {
     Doss <- seq(0.01, 1.99, 0.01)
     
     # Solved Hill Emax
-    
     lines(Doss, Emax(Doss, D50_TV, pGamma), lwd = 3, lty = 3)
     lines(c(1, 1), c(0, 1), col = "red", lwd = 4, lty = 4)
+    # Horizontal line of target effect
     lines(c(0, 2), c(input_Changed()$retVals$targetEff, input_Changed()$retVals$targetEff), col = "red", lwd = 4, lty = 4)
     
     
     qEff <- round(quantile(stepEffect, c(0.005, 0.995)), 2)
-    text(.4, .75, paste("99% effect:\n ", qEff[1], "to", qEff[2]), cex = .75)
+    text(.4, .75, paste("99% effect between\n ", qEff[1], "and", qEff[2]), cex = .75)
     text(1.8, .3, paste("CVe:\n ", round(100 * sd(stepEffect) / mean(stepEffect), 2), "%"), cex = .75)
     text(1.8, .15, paste("CVd:\n ", round(100 * sd(stepDose) / mean(stepDose), 2), "%"), cex = .75)
     
