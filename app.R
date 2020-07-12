@@ -151,7 +151,7 @@ shinyApp(
   ui <- fluidPage(
 
     # Application title
-    titlePanel("Titration paradox"),
+    titlePanel("TitrationParadoxR"), 
 
     # Sidebar with a slider input for number of bins
     sidebarLayout(
